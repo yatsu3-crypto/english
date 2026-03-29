@@ -1207,16 +1207,20 @@ function addPatientMessage(ja, en) {
     <div class="bubble">
       <div class="role-label" style="display:flex;justify-content:space-between;align-items:center;">
         <span>Patient 患者</span>
-        <button onclick="speakText(this, "${en.replace(/"/g,'&quot;')}")" style="background:none;border:none;cursor:pointer;font-size:1rem;opacity:0.6;padding:0 2px;" title="音声で読み上げ">🔈</button>
+        <button class="p-speak-btn" style="background:none;border:none;cursor:pointer;font-size:1.1rem;padding:0 4px;" title="音声で読み上げ">🔈</button>
       </div>
       <div class="ja">${ja}</div>
-      <div class="en">${en}</div>
+      <div class="en patient-en-text">${en}</div>
     </div>`;
+  // Attach click safely
+  div.querySelector('.p-speak-btn').addEventListener('click', function() {
+    speakText(this, div.querySelector('.patient-en-text').textContent, div);
+  });
   msgs.appendChild(div);
   scrollToBottom();
   // Auto-speak if TTS is on
   if (ttsEnabled) {
-    setTimeout(() => speakText(div.querySelector('button'), en, div), 200);
+    setTimeout(() => speakText(div.querySelector('.p-speak-btn'), en, div), 200);
   }
 }
 
@@ -1276,13 +1280,19 @@ async function sendDoctorResponse() {
   const fb = document.createElement('div');
   fb.className = 'feedback-bubble';
   fb.id = fbId;
+  // Build feedback bubble safely (avoid quote issues in onclick)
   fb.innerHTML = `
     <div class="fb-header" style="display:flex;justify-content:space-between;align-items:center;">
       <span>📖 模範例</span>
-      <button onclick="speakText(this, this.closest('.feedback-bubble').querySelector('.fb-model-text').textContent)" style="background:none;border:none;cursor:pointer;font-size:1rem;opacity:0.6;padding:0 2px;" title="模範例を読み上げ">🔈</button>
+      <button class="fb-speak-btn" style="background:none;border:none;cursor:pointer;font-size:1.1rem;padding:0 4px;" title="模範例を読み上げ">🔈</button>
     </div>
     <div class="fb-model fb-model-text" style="margin-top:4px">${modelText}</div>
     <div class="fb-ai-loading" style="margin-top:8px;font-size:0.72rem;color:#888;font-family:'DM Mono',monospace;">🤖 AI評価を取得中...</div>`;
+  // Attach click handler safely
+  fb.querySelector('.fb-speak-btn').addEventListener('click', function() {
+    const text = fb.querySelector('.fb-model-text').textContent;
+    speakText(this, text);
+  });
   msgs2.appendChild(fb);
   scrollToBottom();
 
