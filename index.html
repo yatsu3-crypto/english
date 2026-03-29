@@ -2,7 +2,9 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>皮膚科英会話トレーニング</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&display=swap');
@@ -72,7 +74,7 @@
     grid-template-columns: 260px 1fr;
     flex: 1;
     overflow: hidden;
-    height: calc(100vh - 57px);
+    height: calc(100dvh - 57px);
   }
 
   /* ===== SIDEBAR ===== */
@@ -574,6 +576,170 @@
     font-size: 0.8rem;
     opacity: 0.85;
   }
+
+  /* ===== MOBILE (iPhone) ===== */
+  @media (max-width: 768px) {
+    header {
+      padding: 10px 14px;
+    }
+    header h1 { font-size: 1rem; }
+    .level-badge { font-size: 0.65rem; padding: 3px 8px; }
+
+    .app {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+      height: calc(100dvh - 45px);
+    }
+
+    /* Sidebar becomes a horizontal scrollable chip bar on mobile */
+    .sidebar {
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      padding: 8px 12px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: auto;
+      min-height: unset;
+    }
+
+    .sidebar h2 { display: none; }
+    .progress-bar { display: none; }
+
+    .scenario-list {
+      flex-direction: row;
+      flex-wrap: nowrap;
+      gap: 6px;
+      margin-bottom: 0;
+    }
+
+    .scenario-btn {
+      flex-direction: column;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      white-space: nowrap;
+      font-size: 0.72rem;
+      gap: 2px;
+      background: var(--cream);
+    }
+
+    .scenario-btn .en { display: none; }
+    .scenario-btn .icon { font-size: 1.1rem; }
+
+    .scenario-btn.active {
+      background: var(--dark);
+      color: var(--cream);
+    }
+
+    /* Chat section fills remaining space */
+    .chat-section { overflow: hidden; }
+
+    .scenario-header {
+      padding: 10px 14px;
+    }
+
+    .scenario-header h3 { font-size: 0.9rem; }
+    .scenario-header p { font-size: 0.65rem; }
+
+    .btn-tts-toggle {
+      font-size: 0.65rem;
+      padding: 4px 8px;
+    }
+
+    .btn-restart {
+      font-size: 0.65rem;
+      padding: 4px 8px;
+    }
+
+    .messages {
+      padding: 12px 12px;
+      gap: 12px;
+    }
+
+    .message { max-width: 92%; }
+
+    .bubble {
+      padding: 10px 12px;
+    }
+
+    .bubble .ja { font-size: 0.72rem; }
+    .bubble .en { font-size: 0.85rem; }
+    .bubble .role-label { font-size: 0.6rem; }
+
+    .avatar {
+      width: 30px;
+      height: 30px;
+      font-size: 0.9rem;
+    }
+
+    .feedback-bubble {
+      font-size: 0.78rem;
+      padding: 10px 12px;
+      max-width: 95%;
+    }
+
+    .system-msg { font-size: 0.72rem; padding: 8px 14px; }
+
+    /* Input area - compact for mobile */
+    .input-area {
+      padding: 10px 12px;
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+    }
+
+    .input-label { font-size: 0.62rem; margin-bottom: 6px; }
+
+    .input-row { gap: 6px; }
+
+    textarea {
+      font-size: 0.88rem; /* prevent iOS zoom */
+      min-height: 50px;
+      max-height: 90px;
+      padding: 8px 10px;
+    }
+
+    .btn-send {
+      height: 50px;
+      padding: 8px 12px;
+      font-size: 0.72rem;
+    }
+
+    .mic-wrap { gap: 1px; }
+
+    .btn-mic {
+      width: 50px;
+      height: 50px;
+      font-size: 1.2rem;
+    }
+
+    .mic-label { font-size: 0.55rem; }
+
+    .hint-row { margin-top: 5px; }
+    .hint-text { font-size: 0.6rem; }
+    .btn-hint { font-size: 0.62rem; padding: 3px 8px; }
+
+    /* Welcome screen */
+    .welcome { padding: 20px; }
+    .welcome-card .big-icon { font-size: 2.2rem; }
+    .welcome-card h2 { font-size: 1.2rem; }
+    .welcome-card p { font-size: 0.78rem; }
+
+    /* Complete banner */
+    .complete-banner { max-width: 95%; }
+    .complete-banner h4 { font-size: 0.95rem; }
+    .complete-banner p { font-size: 0.72rem; }
+  }
+
+  /* Extra small (iPhone SE) */
+  @media (max-width: 375px) {
+    .bubble .en { font-size: 0.8rem; }
+    .btn-send { padding: 8px 8px; font-size: 0.68rem; }
+  }
+
 </style>
 </head>
 <body>
