@@ -364,6 +364,79 @@
     color: var(--dark);
   }
 
+  /* ===== PRONUNCIATION CHECK ===== */
+  .pronun-area {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #b8d9c8;
+  }
+
+  .pronun-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--brown);
+    margin-bottom: 6px;
+  }
+
+  .pronun-controls {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .btn-pronun {
+    background: var(--teal);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    font-family: 'DM Mono', monospace;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+
+  .btn-pronun:hover { opacity: 0.85; }
+  .btn-pronun.recording { background: #c0392b; animation: pulse-mic 1s infinite; }
+  .btn-pronun:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .pronun-transcript {
+    font-size: 0.78rem;
+    color: var(--dark);
+    font-style: italic;
+    flex: 1;
+    min-height: 20px;
+  }
+
+  .pronun-result {
+    margin-top: 8px;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.8rem;
+    line-height: 1.6;
+  }
+
+  .pronun-result.good { background: #e8f5e9; border: 1px solid #a5d6a7; }
+  .pronun-result.ok   { background: #fff8e1; border: 1px solid #ffe082; }
+  .pronun-result.poor { background: #fce4ec; border: 1px solid #f48fb1; }
+
+  .pronun-score {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.4rem;
+    font-weight: bold;
+    margin-right: 6px;
+  }
+
+  .score-good { color: #2e7d32; }
+  .score-ok   { color: #f57f17; }
+  .score-poor { color: #b71c1c; }
+
   /* ===== INPUT AREA ===== */
   .input-area {
     border-top: 1px solid var(--border);
@@ -1293,6 +1366,76 @@ async function sendDoctorResponse() {
     const text = fb.querySelector('.fb-model-text').textContent;
     speakText(this, text);
   });
+
+  // Add pronunciation practice area
+  const pronunArea = document.createElement('div');
+  pronunArea.className = 'pronun-area';
+  pronunArea.innerHTML = `
+    <div class="pronun-label">🎯 発音練習 — Pronunciation Check</div>
+    <div class="pronun-controls">
+      <button class="btn-pronun" id="pronunBtn_${fbId}">🎤 話して練習</button>
+      <span class="pronun-transcript" id="pronunTx_${fbId}">ボタンを押して模範例を読み上げてください</span>
+    </div>
+    <div id="pronunResult_${fbId}"></div>`;
+  fb.appendChild(pronunArea);
+
+  // Pronunciation button logic
+  let pronunRec = null;
+  let pronunRecording = false;
+  const pronunBtn = pronunArea.querySelector('.btn-pronun');
+  const pronunTx  = pronunArea.querySelector('.pronun-transcript');
+  const pronunRes = pronunArea.querySelector('[id^="pronunResult_"]');
+
+  pronunBtn.addEventListener('click', () => {
+    if (pronunRecording) {
+      pronunRec && pronunRec.stop();
+      return;
+    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { pronunTx.textContent = '音声認識非対応のブラウザです'; return; }
+    pronunRec = new SR();
+    pronunRec.lang = 'en-US';
+    pronunRec.continuous = false;
+    pronunRec.interimResults = true;
+    let finalText = '';
+
+    pronunRec.onstart = () => {
+      pronunRecording = true;
+      pronunBtn.textContent = '⏹ 停止';
+      pronunBtn.classList.add('recording');
+      pronunTx.textContent = '聞いています...';
+      pronunRes.innerHTML = '';
+    };
+    pronunRec.onresult = (e) => {
+      finalText = '';
+      let interim = '';
+      for (let i = 0; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalText += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
+      }
+      pronunTx.textContent = finalText || interim || '...';
+    };
+    pronunRec.onend = () => {
+      pronunRecording = false;
+      pronunBtn.textContent = '🎤 もう一度';
+      pronunBtn.classList.remove('recording');
+      if (finalText.trim()) {
+        const target = fb.querySelector('.fb-model-text').textContent;
+        pronunTx.textContent = '「' + finalText.trim() + '」';
+        checkPronunciation(finalText.trim(), target, pronunRes);
+      } else {
+        pronunTx.textContent = '音声を認識できませんでした';
+      }
+    };
+    pronunRec.onerror = () => {
+      pronunRecording = false;
+      pronunBtn.textContent = '🎤 もう一度';
+      pronunBtn.classList.remove('recording');
+      pronunTx.textContent = 'エラーが発生しました';
+    };
+    pronunRec.start();
+  });
+
   msgs2.appendChild(fb);
   scrollToBottom();
 
@@ -1393,6 +1536,58 @@ document.addEventListener('keydown', e => {
 });
 
 init();
+
+// ===== PRONUNCIATION CHECK =====
+async function checkPronunciation(spoken, target, resultEl) {
+  resultEl.innerHTML = `<div style="font-size:0.72rem;color:#888;font-family:'DM Mono',monospace;">🔍 採点中...</div>`;
+
+  // Simple local similarity score (word overlap)
+  const normalize = s => s.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+  const wordsA = normalize(spoken).split(/\s+/);
+  const wordsB = normalize(target).split(/\s+/);
+  const setB = new Set(wordsB);
+  const matched = wordsA.filter(w => setB.has(w)).length;
+  const localScore = Math.round((matched / Math.max(wordsB.length, 1)) * 100);
+
+  // Use Claude API for nuanced feedback
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 250,
+        system: `You are an English pronunciation and fluency coach for Japanese doctors. Compare what the user said vs the target phrase and give brief feedback in Japanese. Be encouraging. 
+Reply ONLY in this JSON format (no markdown):
+{"score": <0-100>, "comment": "<1 sentence in Japanese about accuracy/naturalness>", "tip": "<1 specific pronunciation tip in Japanese, or null if good>"}`,
+        messages: [{ role: 'user', content: `Target: "${target}"\nSpoken: "${spoken}"` }]
+      })
+    });
+    const data = await res.json();
+    let raw = data.content?.[0]?.text || '{}';
+    raw = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(raw);
+    const score = parsed.score ?? localScore;
+    const comment = parsed.comment ?? '採点できませんでした';
+    const tip = parsed.tip;
+
+    const cls = score >= 80 ? 'good' : score >= 55 ? 'ok' : 'poor';
+    const scoreCls = score >= 80 ? 'score-good' : score >= 55 ? 'score-ok' : 'score-poor';
+    const emoji = score >= 80 ? '🎉' : score >= 55 ? '👍' : '💪';
+
+    resultEl.className = 'pronun-result ' + cls;
+    resultEl.innerHTML = `
+      <span class="pronun-score ${scoreCls}">${score}</span><small>/100</small> ${emoji}<br>
+      <span>${comment}</span>
+      ${tip ? '<br><small style="color:#555">💡 ' + tip + '</small>' : ''}`;
+  } catch(e) {
+    // Fallback to local score
+    const cls = localScore >= 80 ? 'good' : localScore >= 55 ? 'ok' : 'poor';
+    const scoreCls = localScore >= 80 ? 'score-good' : localScore >= 55 ? 'score-ok' : 'score-poor';
+    resultEl.className = 'pronun-result ' + cls;
+    resultEl.innerHTML = `<span class="pronun-score ${scoreCls}">${localScore}</span><small>/100</small><br>単語の一致率で採点しました`;
+  }
+}
 
 // ===== TEXT TO SPEECH =====
 let ttsEnabled = true;
